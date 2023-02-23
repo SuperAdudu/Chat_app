@@ -1,4 +1,7 @@
+import 'package:chat_app/Methods.dart';
+import 'package:chat_app/chatRoom.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -7,9 +10,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Map<String, dynamic> userMap;
+  Map<String, dynamic>? userMap;
   bool isLoading = false;
   final TextEditingController _search = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  String? chatRoomId(String user1, String user2) {
+    if (user1[0].toLowerCase().codeUnits[0] >=
+        user2.toLowerCase().codeUnits[0]) {
+      return "$user1$user2";
+    } else {
+      return "$user2$user1";
+    }
+  }
+
   void onSearch() async {
     FirebaseFirestore _firestore = FirebaseFirestore.instance;
     setState(() {
@@ -34,6 +47,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Home Screen"),
+        actions: [
+          IconButton(
+            onPressed: () => logOut(context),
+            icon: Icon(Icons.logout),
+          )
+        ],
       ),
       body: isLoading
           ? Center(
@@ -72,9 +91,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 ElevatedButton(
                   onPressed: onSearch,
                   child: Text("Search"),
-                )
+                ),
+                SizedBox(
+                  height: size.height / 30,
+                ),
+                userMap != null
+                    ? ListTile(
+                        onTap: () {
+                          String? roomId = chatRoomId(
+                              _auth.currentUser!.displayName!,
+                              userMap!['name']);
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => ChatRoom(
+                                    chatRoomId: roomId,
+                                    userMap: userMap,
+                                  )));
+                        },
+                        leading: Icon(
+                          Icons.account_box,
+                          color: Colors.black,
+                        ),
+                        title: Text(
+                          userMap!['name'],
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(userMap!['email']),
+                        trailing: Icon(
+                          Icons.chat,
+                          color: Colors.black,
+                        ),
+                      )
+                    : Container(),
               ],
             ),
+    );
+  }
+
+  Widget chatTile(Size size) {
+    return Container(
+      height: size.height / 12,
+      width: size.width / 1.2,
+      child: Row(
+        children: [],
+      ),
     );
   }
 }
